@@ -6,6 +6,7 @@ import { ensureUniqueCode, isReservedSlug } from '@/lib/codegen';
 import { normalizeUrl, validateSlug } from '@/lib/url-utils';
 import { checkUrl } from '@/lib/safebrowsing';
 import { checkRateLimit, getClientIp } from '@/lib/ratelimit';
+import { getCurrentUser } from '@/lib/auth';
 import type { CreateLinkRequest, CreateLinkResponse, ApiError } from '@/lib/types';
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000';
@@ -158,11 +159,14 @@ export async function POST(req: NextRequest): Promise<NextResponse<CreateLinkRes
     passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
   }
 
-  // 9. Insert into DB via Prisma
+  // 9. Check auth session and insert into DB via Prisma
+  const currentUser = await getCurrentUser(req);
+
   const link = await db.link.create({
     data: {
       shortCode,
       originalUrl,
+      userId: currentUser?.userId ?? null,
       passwordHash,
       expiresAt,
       maxClicks: max_clicks ?? null,

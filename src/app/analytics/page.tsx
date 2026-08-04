@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import UserNav from '@/components/UserNav';
 
 interface RecentLinkItem {
   short_code: string;
@@ -68,9 +69,7 @@ export default function AnalyticsHubPage() {
             </a>
           </nav>
 
-          <a href="/" className="btn-signin">
-            New Link
-          </a>
+          <UserNav />
         </div>
       </header>
 

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import ShortenerForm from '@/components/ShortenerForm';
 import ResultCard from '@/components/ResultCard';
+import UserNav from '@/components/UserNav';
 import type { CreateLinkResponse } from '@/lib/types';
 
 export default function HomePage() {
@@ -49,9 +50,7 @@ export default function HomePage() {
             </a>
           </nav>
 
-          <a href="#" className="btn-signin">
-            Sign In
-          </a>
+          <UserNav />
         </div>
       </header>
 

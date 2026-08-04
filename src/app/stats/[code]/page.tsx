@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import UserNav from '@/components/UserNav';
 import type { LinkStatsResponse, ApiError } from '@/lib/types';
 import { displayDomain } from '@/lib/url-utils';
 
@@ -11,7 +12,7 @@ export default function LinkStatsPage() {
 
   const [data, setData] = useState<LinkStatsResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -67,6 +68,7 @@ export default function LinkStatsPage() {
               </span>
               <span>Shawty</span>
             </a>
+            <UserNav />
           </div>
         </header>
         <main className="main-content" style={{ textAlign: 'center', padding: '5rem 1rem' }}>
@@ -96,6 +98,7 @@ export default function LinkStatsPage() {
               </span>
               <span>Shawty</span>
             </a>
+            <UserNav />
           </div>
         </header>
         <main className="main-content" style={{ textAlign: 'center', padding: '5rem 1rem' }}>
@@ -147,9 +150,7 @@ export default function LinkStatsPage() {
             </a>
           </nav>
 
-          <a href="/" className="btn-signin">
-            New Link
-          </a>
+          <UserNav />
         </div>
       </header>
 
