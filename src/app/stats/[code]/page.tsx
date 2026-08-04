@@ -392,12 +392,14 @@ export default function LinkStatsPage() {
         </div>
 
         {/* Custom QR Code Modal */}
-        <QrCodeModal
-          isOpen={showQrModal}
-          onClose={() => setShowQrModal(false)}
-          shortCode={data.link.short_code}
-          shortUrl={shortUrl}
-        />
+        {data?.link && (
+          <QrCodeModal
+            isOpen={showQrModal}
+            onClose={() => setShowQrModal(false)}
+            shortCode={data.link.short_code}
+            shortUrl={typeof window !== 'undefined' ? `${window.location.origin}/${data.link.short_code}` : `http://localhost:3000/${data.link.short_code}`}
+          />
+        )}
       </main>
 
       <style>{`
