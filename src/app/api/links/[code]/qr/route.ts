@@ -16,7 +16,14 @@ export async function GET(
 ): Promise<NextResponse> {
   const { code } = params;
   const { searchParams } = new URL(req.url);
-  const format = searchParams.get('format') ?? 'png';
+  const theme = searchParams.get('theme') ?? 'default';
+  const colorMap: Record<string, { dark: string; light: string }> = {
+    warm: { dark: '#974822', light: '#ffffff' },
+    bakery: { dark: '#974822', light: '#f5ebe6' },
+    dark: { dark: '#1e1e1e', light: '#ffffff' },
+    default: { dark: '#0f0f0f', light: '#ffffff' },
+  };
+  const color = colorMap[theme] || colorMap.default;
 
   const link = await db.link.findUnique({
     where: { shortCode: code, isActive: true },
@@ -37,14 +44,14 @@ export async function GET(
       const svg = await QRCode.toString(shortUrl, {
         type: 'svg',
         margin: 2,
-        color: { dark: '#0f0f0f', light: '#ffffff' },
+        color,
         errorCorrectionLevel: 'M',
       });
       return new NextResponse(svg, {
         headers: {
           'Content-Type': 'image/svg+xml',
           'Cache-Control': 'public, max-age=86400, immutable',
-          'Content-Disposition': `inline; filename="shawty-${code}.svg"`,
+          'Content-Disposition': `inline; filename="shawty-${code}-${theme}.svg"`,
         },
       });
     }
@@ -53,7 +60,7 @@ export async function GET(
       type: 'png',
       margin: 2,
       width: 400,
-      color: { dark: '#0f0f0f', light: '#ffffff' },
+      color,
       errorCorrectionLevel: 'M',
     });
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import QrCodeModal from '@/components/QrCodeModal';
 
 interface UserProfile {
   id: string;
@@ -27,6 +28,7 @@ export default function UserDashboardPage() {
   const [links, setLinks] = useState<UserLink[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [activeQrLink, setActiveQrLink] = useState<UserLink | null>(null);
 
   useEffect(() => {
     async function loadDashboard() {
@@ -225,6 +227,16 @@ export default function UserDashboardPage() {
                 </div>
 
                 <div className="link-item-actions">
+                  <button
+                    type="button"
+                    onClick={() => setActiveQrLink(item)}
+                    className="btn-action-qr"
+                    title="Generate QR Code"
+                  >
+                    <span className="material-symbols-outlined">qr_code_2</span>
+                    <span>QR</span>
+                  </button>
+
                   <a href={`/stats/${item.short_code}`} className="btn-action-dash" title="View Analytics">
                     <span className="material-symbols-outlined">bar_chart</span>
                     <span>Analytics</span>
@@ -254,6 +266,16 @@ export default function UserDashboardPage() {
               </div>
             ))}
           </div>
+        )}
+
+        {/* Custom QR Code Modal */}
+        {activeQrLink && (
+          <QrCodeModal
+            isOpen={!!activeQrLink}
+            onClose={() => setActiveQrLink(null)}
+            shortCode={activeQrLink.short_code}
+            shortUrl={`${typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'}/${activeQrLink.short_code}`}
+          />
         )}
       </main>
 
@@ -481,6 +503,24 @@ export default function UserDashboardPage() {
         .btn-action-dash:hover {
           border-color: var(--primary);
           background-color: #ffffff;
+        }
+        .btn-action-qr {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          background: transparent;
+          border: 1px solid var(--outline-variant);
+          color: var(--primary);
+          padding: 0.5rem 0.85rem;
+          border-radius: 0.5rem;
+          font-size: 0.85rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .btn-action-qr:hover {
+          border-color: var(--primary);
+          background-color: rgba(151, 72, 34, 0.08);
         }
         .btn-action-copy {
           display: inline-flex;

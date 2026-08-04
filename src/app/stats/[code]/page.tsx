@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import UserNav from '@/components/UserNav';
+import QrCodeModal from '@/components/QrCodeModal';
 import type { LinkStatsResponse, ApiError } from '@/lib/types';
 import { displayDomain } from '@/lib/url-utils';
 
@@ -14,6 +15,7 @@ export default function LinkStatsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
 
   useEffect(() => {
     if (!code) return;
@@ -175,7 +177,17 @@ export default function LinkStatsPage() {
             </div>
           </div>
 
-          <div className="stats-header-right">
+          <div className="stats-header-right" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+            <button
+              type="button"
+              onClick={() => setShowQrModal(true)}
+              className="btn-qr-stats"
+              title="QR Code"
+            >
+              <span className="material-symbols-outlined">qr_code_2</span>
+              <span>QR Code</span>
+            </button>
+
             <button type="button" onClick={handleCopy} className="btn-copy-main">
               <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>
                 {copied ? 'check' : 'content_copy'}
@@ -378,9 +390,36 @@ export default function LinkStatsPage() {
             </div>
           </div>
         </div>
+
+        {/* Custom QR Code Modal */}
+        <QrCodeModal
+          isOpen={showQrModal}
+          onClose={() => setShowQrModal(false)}
+          shortCode={data.link.short_code}
+          shortUrl={shortUrl}
+        />
       </main>
 
       <style>{`
+        .btn-qr-stats {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          background: transparent;
+          border: 1px solid var(--outline-variant);
+          color: var(--primary);
+          padding: 0.6rem 1rem;
+          border-radius: 0.75rem;
+          font-family: var(--font-body);
+          font-size: 0.92rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .btn-qr-stats:hover {
+          border-color: var(--primary);
+          background-color: rgba(151, 72, 34, 0.08);
+        }
         .stats-page {
           min-height: 100vh;
           display: flex;
