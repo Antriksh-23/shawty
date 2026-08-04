@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
 import { signToken, setAuthCookie } from '@/lib/auth';
-import { checkRateLimit, getClientIp } from '@/lib/ratelimit';
+import { checkAuthRateLimit, getClientIp } from '@/lib/ratelimit';
 import type { ApiError } from '@/lib/types';
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const ip = getClientIp(req.headers);
-  const rateLimit = await checkRateLimit(ip);
+  const rateLimit = await checkAuthRateLimit(ip);
 
   if (!rateLimit.allowed) {
     return NextResponse.json(

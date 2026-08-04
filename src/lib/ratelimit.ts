@@ -49,6 +49,37 @@ export async function checkRateLimit(ip: string): Promise<RateLimitResult> {
 }
 
 /**
+ * Strict authentication rate limiter: 5 attempts per minute per IP.
+ */
+export async function checkAuthRateLimit(ip: string): Promise<RateLimitResult> {
+  const AUTH_MAX = 5;
+  const AUTH_WINDOW = 60; // 60 seconds (1 minute)
+
+  const ipHash = createHash('sha256').update(ip).digest('hex').slice(0, 32);
+  const key = `ratelimit:auth:${ipHash}`;
+
+  const pipeline = redis.pipeline();
+  pipeline.incr(key);
+  pipeline.ttl(key);
+  const [count, ttl] = (await pipeline.exec()) as [number, number];
+
+  if (ttl === -1) {
+    await redis.expire(key, AUTH_WINDOW);
+  }
+
+  const currentCount = count as number;
+  const currentTtl = ttl === -1 ? AUTH_WINDOW : (ttl as number);
+  const resetAt = Math.floor(Date.now() / 1000) + currentTtl;
+
+  return {
+    allowed: currentCount <= AUTH_MAX,
+    remaining: Math.max(0, AUTH_MAX - currentCount),
+    resetAt,
+    limit: AUTH_MAX,
+  };
+}
+
+/**
  * Extract the real client IP from a Next.js request.
  * Respects common proxy headers.
  */
