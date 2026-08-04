@@ -12,6 +12,8 @@ import type { CreateLinkRequest, CreateLinkResponse, ApiError } from '@/lib/type
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000';
 const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS ?? '12', 10);
 
+export const dynamic = 'force-dynamic';
+
 // ─── POST /api/links ─────────────────────────────────────────────────────────
 export async function POST(req: NextRequest): Promise<NextResponse<CreateLinkResponse | ApiError>> {
   // 1. Rate limiting

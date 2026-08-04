@@ -8,6 +8,10 @@ interface RouteParams {
   params: { code: string };
 }
 
+// Ensure Vercel never statically caches responses or 404s for newly created short links
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // ─── GET /:code ───────────────────────────────────────────────────────────────
 // This is the highest-traffic route. Every millisecond counts.
 //

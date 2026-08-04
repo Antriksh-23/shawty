@@ -3,6 +3,8 @@ import { db } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
 import type { ApiError } from '@/lib/types';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
     const payload = await getCurrentUser(req);

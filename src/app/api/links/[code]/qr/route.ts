@@ -9,6 +9,8 @@ interface RouteParams {
   params: { code: string };
 }
 
+export const dynamic = 'force-dynamic';
+
 // ─── GET /api/links/:code/qr ──────────────────────────────────────────────────
 export async function GET(
   req: NextRequest,

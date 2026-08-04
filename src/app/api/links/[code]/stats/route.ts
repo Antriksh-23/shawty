@@ -6,6 +6,8 @@ interface RouteParams {
   params: { code: string };
 }
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   _req: NextRequest,
   { params }: RouteParams
