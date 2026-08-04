@@ -8,10 +8,16 @@ export interface AuthPayload {
 }
 
 export const AUTH_COOKIE_NAME = 'shawty_token';
-const DEFAULT_SECRET = 'shawty-super-secret-auth-key-change-in-prod-32c';
 
 function getSecretKey(): Uint8Array {
-  const secret = process.env.AUTH_SECRET ?? DEFAULT_SECRET;
+  const secret = process.env.AUTH_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('[SECURITY FATAL] AUTH_SECRET environment variable must be set in production.');
+    }
+    // Dummy 32-byte numeric array for local development/testing when AUTH_SECRET is not explicitly set in .env
+    return new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32]);
+  }
   return new TextEncoder().encode(secret);
 }
 

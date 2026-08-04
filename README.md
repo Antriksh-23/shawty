@@ -90,6 +90,9 @@ npm install
 ```
 
 ### 3. Environment Configuration
+> [!CAUTION]
+> **Important Security & Git History Notice**: Never commit `.env` or `.env.local` files to Git. If you have previously committed any hardcoded secrets, API keys, or JWT signing keys (`AUTH_SECRET`), **rotate and revoke those secrets immediately**, as older values remain accessible in your Git commit history.
+
 Create a `.env` file in the project root by copying the template:
 ```bash
 cp .env.example .env
@@ -101,9 +104,10 @@ cp .env.example .env
 | `DIRECT_URL` | Supabase PostgreSQL direct connection string (for migrations) | `postgresql://postgres:...@aws-0-...supabase.com:5432/postgres` |
 | `UPSTASH_REDIS_REST_URL` | Upstash Redis HTTPS REST endpoint | `https://...upstash.io` |
 | `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis authentication token | `AY...` |
-| `AUTH_SECRET` | 32+ character secret key for HMAC-SHA256 JWT signing | `shawty-super-secret-auth-key-change-in-prod-32c` |
+| `AUTH_SECRET` | 32+ character secret key for HMAC-SHA256 JWT signing | `your-32-character-random-secret-key-change-in-prod` |
+| `IP_HASH_SALT` | Server-side secret pepper for GDPR-compliant IP hashing | `your-secret-pepper-for-gdpr-ip-hashing` |
 | `NEXT_PUBLIC_BASE_URL` | Public base URL of the application | `http://localhost:3000` |
-| `GOOGLE_SAFE_BROWSING_API_KEY` | *(Optional)* Google Safe Browsing v4 API Key | `AIzaSy...` |
+| `GOOGLE_SAFE_BROWSING_KEY` | *(Optional)* Google Safe Browsing v4 API Key | `AIzaSy...` |
 
 ### 4. Database Setup
 Push the Prisma schema to your PostgreSQL database and generate the Prisma client:

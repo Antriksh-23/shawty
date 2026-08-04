@@ -98,6 +98,6 @@ export async function ensureUniqueCode(
  * Uses SHA-256 with a salt derived from the base URL (acts as a pepper).
  */
 export function hashIp(ip: string): string {
-  const pepper = process.env.NEXT_PUBLIC_BASE_URL ?? 'shawty-salt';
+  const pepper = process.env.IP_HASH_SALT ?? process.env.AUTH_SECRET ?? 'shawty-dev-salt';
   return createHash('sha256').update(`${pepper}:${ip}`).digest('hex').slice(0, 32);
 }
