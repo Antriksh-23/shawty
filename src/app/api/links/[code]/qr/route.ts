@@ -18,6 +18,7 @@ export async function GET(
 ): Promise<NextResponse> {
   const { code } = params;
   const { searchParams } = new URL(req.url);
+  const format = searchParams.get('format') ?? 'png';
   const theme = searchParams.get('theme') ?? 'default';
   const colorMap: Record<string, { dark: string; light: string }> = {
     warm: { dark: '#974822', light: '#ffffff' },
