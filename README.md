@@ -3,6 +3,7 @@
 # ⚡ Shawty
 ### An Enterprise-Grade, Edge-Optimized URL Shortener & Real-Time Analytics Platform
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-shawty--silk.vercel.app-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://shawty-silk.vercel.app)
 [![Next.js](https://img.shields.io/badge/Next.js-14.2-black?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Prisma](https://img.shields.io/badge/Prisma-5.22-2D3748?style=for-the-badge&logo=prisma&logoColor=white)](https://www.prisma.io/)
@@ -12,6 +13,10 @@
 
 <p align="center">
   <strong>Shawty</strong> is a high-performance URL shortener and click analytics platform engineered with modern <em>Warm Tech & Bakery Cream</em> aesthetics. It combines edge-cached redirects, Google Safe Browsing malware verification, interactive Chart.js analytics, Web Crypto JWT authentication, and customizable QR code generation into a single sleek web application.
+</p>
+
+<p align="center">
+  🔗 <strong>Live Demo:</strong> <a href="https://shawty-silk.vercel.app" target="_blank"><strong>https://shawty-silk.vercel.app</strong></a>
 </p>
 
 </div>
@@ -59,7 +64,6 @@ graph TD
 
 ## 🛠️ Technology Stack
 
-```table
 | Layer | Technology | Purpose |
 | :--- | :--- | :--- |
 | **Framework** | [Next.js 14 App Router](https://nextjs.org/) | React Server Components, API routes, edge-ready middleware |
@@ -71,7 +75,6 @@ graph TD
 | **Analytics Charting** | [Chart.js](https://www.chartjs.org/) + `react-chartjs-2` | Responsive click trend visualization |
 | **QR Code Engine** | [qrcode](https://github.com/soldair/node-qrcode) | SVG & PNG barcode generation with custom color themes |
 | **Automated Testing** | [Vitest](https://vitest.dev/) | 60+ unit tests for algorithms, security shields, and API routes |
-```
 
 ---
 
