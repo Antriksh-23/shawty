@@ -13,7 +13,7 @@ export async function GET(
   const { code } = params;
 
   try {
-    const link = await db.link.findUnique({
+    let link = await db.link.findUnique({
       where: { shortCode: code },
       select: {
         id: true,
@@ -26,6 +26,22 @@ export async function GET(
         createdAt: true,
       },
     });
+
+    if (!link) {
+      link = await db.link.findFirst({
+        where: { shortCode: { equals: code, mode: 'insensitive' } },
+        select: {
+          id: true,
+          shortCode: true,
+          originalUrl: true,
+          clickCount: true,
+          maxClicks: true,
+          expiresAt: true,
+          isActive: true,
+          createdAt: true,
+        },
+      });
+    }
 
     if (!link) {
       return NextResponse.json(

@@ -180,10 +180,16 @@ export async function POST(req: NextRequest): Promise<NextResponse<CreateLinkRes
     },
   });
 
-  // 10. Prime Redis cache immediately
-  await redis.set(codeKey(shortCode), originalUrl, { ex: CODE_TTL });
+  // 10. Prime Redis cache immediately (non-blocking)
+  await redis
+    .set(codeKey(shortCode), originalUrl, { ex: CODE_TTL })
+    .catch((err) => console.error('[Create Link] Redis cache prime error:', err));
 
-  const shortUrl = `${BASE_URL}/${shortCode}`;
+  // Dynamically resolve origin from incoming request headers (fixes broken links when env var is missing)
+  const host = req.headers.get('host');
+  const protocol = req.headers.get('x-forwarded-proto') ?? (host?.includes('localhost') ? 'http' : 'https');
+  const origin = host ? `${protocol}://${host}` : BASE_URL;
+  const shortUrl = `${origin}/${shortCode}`;
 
   return NextResponse.json(
     {

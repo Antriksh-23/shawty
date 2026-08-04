@@ -47,7 +47,7 @@ export async function GET(
   }
 
   // ── 2. Cache MISS — query Postgres via Prisma ─────────────────────────────
-  const link = await db.link.findUnique({
+  let link = await db.link.findUnique({
     where: { shortCode: code },
     select: {
       shortCode: true,
@@ -59,6 +59,27 @@ export async function GET(
       isActive: true,
     },
   });
+
+  // Fallback: try case-insensitive lookup (e.g. mobile autocorrect capitalized the code)
+  if (!link) {
+    link = await db.link.findFirst({
+      where: {
+        shortCode: {
+          equals: code,
+          mode: 'insensitive',
+        },
+      },
+      select: {
+        shortCode: true,
+        originalUrl: true,
+        passwordHash: true,
+        expiresAt: true,
+        maxClicks: true,
+        clickCount: true,
+        isActive: true,
+      },
+    });
+  }
 
   // ── 3. Not found ──────────────────────────────────────────────────────────
   if (!link) {

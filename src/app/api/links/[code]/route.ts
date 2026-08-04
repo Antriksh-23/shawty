@@ -15,7 +15,7 @@ export async function GET(
 ): Promise<NextResponse> {
   const { code } = params;
 
-  const link = await db.link.findUnique({
+  let link = await db.link.findUnique({
     where: { shortCode: code },
     select: {
       shortCode: true,
@@ -27,6 +27,21 @@ export async function GET(
       createdAt: true,
     },
   });
+
+  if (!link) {
+    link = await db.link.findFirst({
+      where: { shortCode: { equals: code, mode: 'insensitive' } },
+      select: {
+        shortCode: true,
+        originalUrl: true,
+        expiresAt: true,
+        maxClicks: true,
+        clickCount: true,
+        isActive: true,
+        createdAt: true,
+      },
+    });
+  }
 
   if (!link) {
     return NextResponse.json(
