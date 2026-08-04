@@ -66,6 +66,29 @@ export default function UserDashboardPage() {
     }
   }
 
+  async function handleDeleteAccount() {
+    if (
+      !confirm(
+        'Are you sure you want to permanently delete your account and ALL your shortened links? This GDPR action cannot be undone.'
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/auth/me', { method: 'DELETE' });
+      if (res.ok) {
+        alert('Your account and all personal data have been permanently deleted.');
+        router.push('/');
+        router.refresh();
+      } else {
+        alert('Failed to delete account.');
+      }
+    } catch {
+      alert('Network error while deleting account.');
+    }
+  }
+
   async function handleDelete(id: string, short_code: string) {
     if (!confirm(`Are you sure you want to delete /${short_code}? This action cannot be undone.`)) {
       return;
@@ -160,6 +183,17 @@ export default function UserDashboardPage() {
               <span className="stat-num">{totalClicks}</span>
               <span className="stat-label">Total Clicks</span>
             </div>
+            <button
+              type="button"
+              onClick={handleDeleteAccount}
+              className="btn-delete-account"
+              title="Permanently delete account and all personal data (GDPR)"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>
+                delete_forever
+              </span>
+              Delete Account & Data
+            </button>
           </div>
         </section>
 
@@ -355,7 +389,27 @@ export default function UserDashboardPage() {
         }
         .account-stats-right {
           display: flex;
+          align-items: center;
+          flex-wrap: wrap;
           gap: 1.5rem;
+        }
+        .btn-delete-account {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          background: transparent;
+          border: 1px solid rgba(220, 38, 38, 0.4);
+          color: #dc2626;
+          padding: 0.6rem 0.95rem;
+          border-radius: 0.6rem;
+          font-size: 0.82rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .btn-delete-account:hover {
+          background: rgba(220, 38, 38, 0.08);
+          border-color: #dc2626;
         }
         .stat-pill {
           display: flex;
