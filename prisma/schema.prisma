@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  plan         String   @default("free")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  links   Link[]
+  domains Domain[]
+  apiKeys ApiKey[]
+
+  @@map("users")
+}
+
+model Link {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  shortCode    String    @unique @map("short_code")
+  originalUrl  String    @map("original_url")
+  userId       String?   @map("user_id") @db.Uuid
+  passwordHash String?   @map("password_hash")
+  expiresAt    DateTime? @map("expires_at") @db.Timestamptz
+  maxClicks    Int?      @map("max_clicks")
+  clickCount   Int       @default(0) @map("click_count")
+  isActive     Boolean   @default(true) @map("is_active")
+  domainId     String?   @map("domain_id") @db.Uuid
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  domain Domain? @relation(fields: [domainId], references: [id], onDelete: SetNull)
+  clicks Click[]
+
+  @@index([shortCode])
+  @@index([userId])
+  @@index([isActive])
+  @@map("links")
+}
+
+model Click {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  linkId     String   @map("link_id") @db.Uuid
+  clickedAt  DateTime @default(now()) @map("clicked_at") @db.Timestamptz
+  ipHash     String?  @map("ip_hash")
+  country    String?
+  deviceType String?  @map("device_type")
+  browser    String?
+  referrer   String?
+
+  link Link @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  @@index([linkId])
+  @@index([clickedAt])
+  @@map("clicks")
+}
+
+model Domain {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String   @map("user_id") @db.Uuid
+  hostname          String   @unique
+  verified          Boolean  @default(false)
+  verificationToken String   @default(dbgenerated("encode(gen_random_bytes(32), 'hex')")) @map("verification_token")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  links Link[]
+
+  @@map("domains")
+}
+
+model ApiKey {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String    @map("user_id") @db.Uuid
+  keyHash       String    @map("key_hash")
+  name          String?
+  rateLimitTier String    @default("free") @map("rate_limit_tier")
+  lastUsedAt    DateTime? @map("last_used_at") @db.Timestamptz
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("api_keys")
+}

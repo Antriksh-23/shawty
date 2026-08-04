@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  # Local Postgres (mirrors Supabase schema in dev)
+  postgres:
+    image: postgres:15-alpine
+    container_name: shawty_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: shawty_dev
+      POSTGRES_DB: shawty
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./supabase/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Local Redis (mirrors Upstash in dev)
+  redis:
+    image: redis:7-alpine
+    container_name: shawty_redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    command: redis-server --save 60 1 --loglevel warning
+
+  # Upstash-compatible local REST proxy for redis
+  # (lets the @upstash/redis client work locally without changes)
+  redis-rest:
+    image: hiett/serverless-redis-http:latest
+    container_name: shawty_redis_rest
+    environment:
+      SRH_MODE: env
+      SRH_TOKEN: local-dev-token
+      SRH_CONNECTION_STRING: redis://redis:6379
+    ports:
+      - '8079:80'
+    depends_on:
+      - redis
+
+volumes:
+  postgres_data:
+  redis_data:

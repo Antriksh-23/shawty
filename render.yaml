@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: shawty
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false
+      - key: GOOGLE_SAFE_BROWSING_KEY
+        sync: false
+      - key: NEXT_PUBLIC_BASE_URL
+        sync: false
+      - key: BCRYPT_ROUNDS
+        value: "12"
+      - key: RATE_LIMIT_ANON_MAX
+        value: "20"
+      - key: RATE_LIMIT_WINDOW_SECONDS
+        value: "3600"
+      - key: CAPTCHA_ENABLED
+        value: "false"
+      - key: REDIS_CODE_TTL
+        value: "86400"

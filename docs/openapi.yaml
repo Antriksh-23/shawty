@@ -1,0 +1,440 @@
+openapi: 3.1.0
+info:
+  title: Shawty URL Shortener API
+  description: |
+    REST API for the Shawty URL shortening service.
+    
+    **Phase 1 (implemented):** Link creation, redirect, QR codes, link metadata.
+    **Phase 2 (planned):** User authentication, analytics, link editing.
+    **Phase 3 (planned):** Bulk shortening, API keys, custom domains, teams.
+    
+    All requests and responses use `application/json`.
+    
+    Rate limiting applies to link creation:
+    - Anonymous: 20 links per hour per IP
+    - Rate limit headers are included in all POST responses
+  version: 0.1.0
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:3000
+    description: Local development
+  - url: https://your-app.onrender.com
+    description: Production (Render)
+
+tags:
+  - name: Links
+    description: Create, read, and manage shortened links
+  - name: Redirect
+    description: The core redirect endpoint
+  - name: QR Codes
+    description: QR code generation for short links
+  - name: Health
+    description: Service health check
+
+paths:
+  /{code}:
+    get:
+      tags: [Redirect]
+      summary: Redirect to original URL
+      description: |
+        The core redirect endpoint. Resolves the short code and redirects to the
+        original URL. Checks expiry, click limits, and password protection.
+        
+        **Performance:** Redis-cached. Cache hit = ~1 Redis call, no DB round-trip.
+        Cache miss = 1 DB query + async Redis write.
+      parameters:
+        - name: code
+          in: path
+          required: true
+          description: The short code or custom slug
+          schema:
+            type: string
+            example: aB3xKp
+      responses:
+        '302':
+          description: Redirect to the original URL
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+            X-Cache:
+              description: HIT or MISS indicating Redis cache state
+              schema:
+                type: string
+                enum: [HIT, MISS]
+        '404':
+          description: Short code not found
+          content:
+            text/html:
+              schema:
+                type: string
+        '410':
+          description: Link has expired (by time or click limit) or was deactivated
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /api/links:
+    post:
+      tags: [Links]
+      summary: Create a short link
+      description: |
+        Creates a new shortened URL. Runs the full validation pipeline:
+        1. IP rate limiting (20/hour for anonymous users)
+        2. URL normalization and scheme validation
+        3. Google Safe Browsing check (if API key configured)
+        4. Custom slug validation and uniqueness check
+        5. Auto code generation (7-char base62) if no custom slug
+        6. Password hashing (bcrypt) if password provided
+        
+        Returns the short URL ready to use.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: The long URL to shorten
+                  example: https://example.com/very/long/path?with=params&and=more
+                custom_slug:
+                  type: string
+                  pattern: '^[a-zA-Z0-9_-]{1,50}$'
+                  description: Optional custom slug (must be unique and not reserved)
+                  example: my-sale
+                expires_at:
+                  type: string
+                  format: date-time
+                  description: Optional ISO 8601 expiry date (must be in the future)
+                  example: '2025-12-31T23:59:59Z'
+                password:
+                  type: string
+                  minLength: 4
+                  description: Optional password to protect the link (stored as bcrypt hash)
+                  example: secret123
+                max_clicks:
+                  type: integer
+                  minimum: 1
+                  description: Optional maximum number of clicks before the link expires
+                  example: 100
+      responses:
+        '201':
+          description: Link created successfully
+          headers:
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+            X-RateLimit-Reset:
+              schema:
+                type: integer
+                description: Unix timestamp when the rate limit resets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateLinkResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Custom slug is already taken
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '422':
+          description: Validation error (invalid URL, blocked scheme, malware detected, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '429':
+          description: Rate limit exceeded
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                description: Seconds until the rate limit resets
+            X-RateLimit-Limit:
+              schema:
+                type: integer
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+            X-RateLimit-Reset:
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+    get:
+      tags: [Links]
+      summary: List user's links (Phase 2)
+      description: Returns a paginated list of links owned by the authenticated user. Not yet implemented.
+      responses:
+        '501':
+          description: Not implemented — coming in Phase 2
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+
+  /api/links/{code}:
+    get:
+      tags: [Links]
+      summary: Get link metadata
+      description: Returns metadata for a short link including click count, expiry, and current status.
+      parameters:
+        - $ref: '#/components/parameters/CodeParam'
+      responses:
+        '200':
+          description: Link metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LinkMetadata'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Links]
+      summary: Update link destination
+      description: Updates the destination URL for an existing short link without changing the code.
+      parameters:
+        - $ref: '#/components/parameters/CodeParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  example: https://new-destination.com
+      responses:
+        '200':
+          description: Link updated successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+    delete:
+      tags: [Links]
+      summary: Delete (deactivate) a link
+      description: Deactivates a short link. The code is preserved in the DB but redirects will return 410.
+      parameters:
+        - $ref: '#/components/parameters/CodeParam'
+      responses:
+        '200':
+          description: Link deactivated
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/links/{code}/qr:
+    get:
+      tags: [QR Codes]
+      summary: Get QR code for a link
+      description: |
+        Returns a QR code image for the short link. Supports PNG (default) and SVG formats.
+        Cached with `Cache-Control: public, max-age=86400`.
+      parameters:
+        - $ref: '#/components/parameters/CodeParam'
+        - name: format
+          in: query
+          description: Output format
+          schema:
+            type: string
+            enum: [png, svg]
+            default: png
+      responses:
+        '200':
+          description: QR code image
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                example: image/png
+            Cache-Control:
+              schema:
+                type: string
+                example: public, max-age=86400, immutable
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/svg+xml:
+              schema:
+                type: string
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/links/{code}/unlock:
+    post:
+      tags: [Links]
+      summary: Unlock a password-protected link
+      description: Validates the password for a password-protected link and returns the destination URL on success.
+      parameters:
+        - $ref: '#/components/parameters/CodeParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                password:
+                  type: string
+                  example: secret123
+      responses:
+        '200':
+          description: Password correct; destination URL returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  redirect_url:
+                    type: string
+                    format: uri
+        '401':
+          description: Incorrect password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/health:
+    get:
+      tags: [Health]
+      summary: Health check
+      description: Returns service status. Used by Render for uptime monitoring.
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                    example: 0.1.0
+
+components:
+  parameters:
+    CodeParam:
+      name: code
+      in: path
+      required: true
+      description: Short code or custom slug
+      schema:
+        type: string
+        example: aB3xKp
+
+  schemas:
+    CreateLinkResponse:
+      type: object
+      required: [short_url, short_code, original_url, created_at]
+      properties:
+        short_url:
+          type: string
+          format: uri
+          example: https://shwt.ly/aB3xKp
+        short_code:
+          type: string
+          example: aB3xKp
+        original_url:
+          type: string
+          format: uri
+          example: https://example.com/very/long/path
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        max_clicks:
+          type: integer
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    LinkMetadata:
+      type: object
+      properties:
+        short_code:
+          type: string
+        original_url:
+          type: string
+          format: uri
+        click_count:
+          type: integer
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        max_clicks:
+          type: integer
+          nullable: true
+        is_active:
+          type: boolean
+        status:
+          type: string
+          enum: [active, expired_time, expired_clicks, inactive]
+        created_at:
+          type: string
+          format: date-time
+
+    ApiError:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+          example: The slug "admin" is a reserved word.
+        code:
+          type: string
+          description: Machine-readable error code
+          example: SLUG_TAKEN
+
+  responses:
+    BadRequest:
+      description: Invalid request body
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    NotFound:
+      description: Link not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
