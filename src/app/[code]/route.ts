@@ -95,10 +95,12 @@ export async function GET(
 
   const originalUrl = resolution.url;
 
-  // ── 5. Cache for future requests (non-blocking) ───────────────────────────
-  void redis
-    .set(codeKey(code), originalUrl, { ex: CODE_TTL })
-    .catch((err) => console.error('[Redirect] Redis cache write error:', err));
+  // ── 5. Cache for future requests only if no click limit or expiration (non-blocking) ──
+  if (link.maxClicks === null && link.expiresAt === null) {
+    void redis
+      .set(codeKey(code), originalUrl, { ex: CODE_TTL })
+      .catch((err) => console.error('[Redirect] Redis cache write error:', err));
+  }
 
   // ── 6. Log click asynchronously (non-blocking) ────────────────────────────
   void logClickAsync(req, code);
@@ -118,6 +120,14 @@ async function logClickAsync(req: NextRequest, code: string): Promise<void> {
       req.headers.get('x-real-ip') ??
       '127.0.0.1';
     const ipHash = hashIp(ip);
+
+    // 60-second cooldown per IP+code to prevent click spam, DDoS, and analytics poisoning
+    const cooldownKey = `click_cooldown:${code}:${ipHash}`;
+    const acquired = await redis.set(cooldownKey, '1', { ex: 60, nx: true }).catch(() => null);
+    if (!acquired) {
+      return; // Duplicate click from same IP within 60 seconds — ignore
+    }
+
     const referrer = req.headers.get('referer') ?? null;
     const userAgent = req.headers.get('user-agent') ?? '';
 
