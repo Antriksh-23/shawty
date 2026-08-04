@@ -55,7 +55,7 @@ export async function signToken(payload: AuthPayload): Promise<string> {
 
   const key = await crypto.subtle.importKey(
     'raw',
-    getSecretKey(),
+    getSecretKey() as unknown as BufferSource,
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['sign']
@@ -64,7 +64,7 @@ export async function signToken(payload: AuthPayload): Promise<string> {
   const sigBuffer = await crypto.subtle.sign(
     'HMAC',
     key,
-    new TextEncoder().encode(dataToSign)
+    new TextEncoder().encode(dataToSign) as unknown as BufferSource
   );
 
   const sigB64 = base64UrlEncode(new Uint8Array(sigBuffer));
@@ -82,7 +82,7 @@ export async function verifyToken(token: string): Promise<AuthPayload | null> {
 
     const key = await crypto.subtle.importKey(
       'raw',
-      getSecretKey(),
+      getSecretKey() as unknown as BufferSource,
       { name: 'HMAC', hash: 'SHA-256' },
       false,
       ['verify']
@@ -92,8 +92,8 @@ export async function verifyToken(token: string): Promise<AuthPayload | null> {
     const valid = await crypto.subtle.verify(
       'HMAC',
       key,
-      sigBytes,
-      new TextEncoder().encode(dataToVerify)
+      sigBytes as unknown as BufferSource,
+      new TextEncoder().encode(dataToVerify) as unknown as BufferSource
     );
 
     if (!valid) return null;
