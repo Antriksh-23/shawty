@@ -3,20 +3,17 @@ import { Redis } from '@upstash/redis';
 const url = process.env.UPSTASH_REDIS_REST_URL;
 const token = process.env.UPSTASH_REDIS_REST_TOKEN;
 
-if (!url || !token) {
-  throw new Error(
-    'UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN must be set'
-  );
-}
-
-// Singleton pattern for dev HMR
-declare global {
-  // eslint-disable-next-line no-var
-  var __redis: Redis | undefined;
-}
-
 function createRedisClient(): Redis {
-  return new Redis({ url: url!, token: token! });
+  if (!url || !token) {
+    console.warn(
+      '[REDIS WARNING] UPSTASH_REDIS_REST_URL or UPSTASH_REDIS_REST_TOKEN is missing. Using fallback Redis client.'
+    );
+    return new Redis({
+      url: 'https://fallback-dummy-url.upstash.io',
+      token: 'fallback-dummy-token',
+    });
+  }
+  return new Redis({ url, token });
 }
 
 export const redis: Redis =

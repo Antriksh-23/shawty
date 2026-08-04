@@ -80,8 +80,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     setAuthCookie(res, token);
     return res;
-  } catch (err) {
+  } catch (err: unknown) {
     console.error('[Signup API] Error:', err);
+    const errMsg = err instanceof Error ? err.message : String(err);
+    if (errMsg.includes('Table') || errMsg.includes('does not exist') || errMsg.includes('DATABASE_URL') || errMsg.includes('P2021') || errMsg.includes('PrismaClient')) {
+      return NextResponse.json(
+        { error: 'Database issue detected. Please check DATABASE_URL or run database migration.' } satisfies ApiError,
+        { status: 500 }
+      );
+    }
     return NextResponse.json(
       { error: 'Failed to create account. Please try again later.' } satisfies ApiError,
       { status: 500 }

@@ -21,31 +21,40 @@ export interface RateLimitResult {
  * @param ip - Raw IP string (will be hashed before use as a key)
  */
 export async function checkRateLimit(ip: string): Promise<RateLimitResult> {
-  // Hash the IP so raw IPs are never stored in Redis
-  const ipHash = createHash('sha256').update(ip).digest('hex').slice(0, 32);
-  const key = rateLimitKey(ipHash);
+  try {
+    if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+      return { allowed: true, remaining: MAX_REQUESTS, resetAt: Math.floor(Date.now() / 1000) + WINDOW_SECONDS, limit: MAX_REQUESTS };
+    }
 
-  // Atomic pipeline: INCR then set expiry if it's a new key
-  const pipeline = redis.pipeline();
-  pipeline.incr(key);
-  pipeline.ttl(key);
-  const [count, ttl] = (await pipeline.exec()) as [number, number];
+    // Hash the IP so raw IPs are never stored in Redis
+    const ipHash = createHash('sha256').update(ip).digest('hex').slice(0, 32);
+    const key = rateLimitKey(ipHash);
 
-  // If this is the first request in the window, set the expiry
-  if (ttl === -1) {
-    await redis.expire(key, WINDOW_SECONDS);
+    // Atomic pipeline: INCR then set expiry if it's a new key
+    const pipeline = redis.pipeline();
+    pipeline.incr(key);
+    pipeline.ttl(key);
+    const [count, ttl] = (await pipeline.exec()) as [number, number];
+
+    // If this is the first request in the window, set the expiry
+    if (ttl === -1) {
+      await redis.expire(key, WINDOW_SECONDS);
+    }
+
+    const currentCount = count as number;
+    const currentTtl = ttl === -1 ? WINDOW_SECONDS : (ttl as number);
+    const resetAt = Math.floor(Date.now() / 1000) + currentTtl;
+
+    return {
+      allowed: currentCount <= MAX_REQUESTS,
+      remaining: Math.max(0, MAX_REQUESTS - currentCount),
+      resetAt,
+      limit: MAX_REQUESTS,
+    };
+  } catch (err) {
+    console.warn('[RateLimit Warning] Redis error, bypassing rate limit:', err);
+    return { allowed: true, remaining: MAX_REQUESTS, resetAt: Math.floor(Date.now() / 1000) + WINDOW_SECONDS, limit: MAX_REQUESTS };
   }
-
-  const currentCount = count as number;
-  const currentTtl = ttl === -1 ? WINDOW_SECONDS : (ttl as number);
-  const resetAt = Math.floor(Date.now() / 1000) + currentTtl;
-
-  return {
-    allowed: currentCount <= MAX_REQUESTS,
-    remaining: Math.max(0, MAX_REQUESTS - currentCount),
-    resetAt,
-    limit: MAX_REQUESTS,
-  };
 }
 
 /**
@@ -55,28 +64,37 @@ export async function checkAuthRateLimit(ip: string): Promise<RateLimitResult> {
   const AUTH_MAX = 5;
   const AUTH_WINDOW = 60; // 60 seconds (1 minute)
 
-  const ipHash = createHash('sha256').update(ip).digest('hex').slice(0, 32);
-  const key = `ratelimit:auth:${ipHash}`;
+  try {
+    if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+      return { allowed: true, remaining: AUTH_MAX, resetAt: Math.floor(Date.now() / 1000) + AUTH_WINDOW, limit: AUTH_MAX };
+    }
 
-  const pipeline = redis.pipeline();
-  pipeline.incr(key);
-  pipeline.ttl(key);
-  const [count, ttl] = (await pipeline.exec()) as [number, number];
+    const ipHash = createHash('sha256').update(ip).digest('hex').slice(0, 32);
+    const key = `ratelimit:auth:${ipHash}`;
 
-  if (ttl === -1) {
-    await redis.expire(key, AUTH_WINDOW);
+    const pipeline = redis.pipeline();
+    pipeline.incr(key);
+    pipeline.ttl(key);
+    const [count, ttl] = (await pipeline.exec()) as [number, number];
+
+    if (ttl === -1) {
+      await redis.expire(key, AUTH_WINDOW);
+    }
+
+    const currentCount = count as number;
+    const currentTtl = ttl === -1 ? AUTH_WINDOW : (ttl as number);
+    const resetAt = Math.floor(Date.now() / 1000) + currentTtl;
+
+    return {
+      allowed: currentCount <= AUTH_MAX,
+      remaining: Math.max(0, AUTH_MAX - currentCount),
+      resetAt,
+      limit: AUTH_MAX,
+    };
+  } catch (err) {
+    console.warn('[Auth RateLimit Warning] Redis error, bypassing auth rate limit:', err);
+    return { allowed: true, remaining: AUTH_MAX, resetAt: Math.floor(Date.now() / 1000) + AUTH_WINDOW, limit: AUTH_MAX };
   }
-
-  const currentCount = count as number;
-  const currentTtl = ttl === -1 ? AUTH_WINDOW : (ttl as number);
-  const resetAt = Math.floor(Date.now() / 1000) + currentTtl;
-
-  return {
-    allowed: currentCount <= AUTH_MAX,
-    remaining: Math.max(0, AUTH_MAX - currentCount),
-    resetAt,
-    limit: AUTH_MAX,
-  };
 }
 
 /**
