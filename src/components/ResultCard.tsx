@@ -145,6 +145,31 @@ export default function ResultCard({ result, onReset }: ResultCardProps) {
 
         {/* Right Col: Actions */}
         <div className="action-buttons-col">
+          {/* Live Analytics Dashboard */}
+          <a
+            href={`/stats/${code}`}
+            className="action-card-btn"
+          >
+            <div className="action-card-left">
+              <div
+                className="action-icon-circle"
+                style={{ background: 'rgba(217, 123, 81, 0.18)', color: 'var(--primary)' }}
+              >
+                <span className="material-symbols-outlined">bar_chart</span>
+              </div>
+              <div>
+                <div className="action-title">Live Analytics Dashboard</div>
+                <div className="action-desc">Track clicks, referrers, and device stats.</div>
+              </div>
+            </div>
+            <span
+              className="material-symbols-outlined"
+              style={{ color: 'var(--secondary)' }}
+            >
+              arrow_forward
+            </span>
+          </a>
+
           {/* Preview Safety Page */}
           <a
             href={previewUrl}

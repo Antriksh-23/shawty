@@ -8,6 +8,18 @@ import type { CreateLinkResponse } from '@/lib/types';
 export default function HomePage() {
   const [result, setResult] = useState<CreateLinkResponse | null>(null);
 
+  function handleSuccess(data: CreateLinkResponse) {
+    setResult(data);
+    try {
+      const saved = localStorage.getItem('shawty_recent_links');
+      const list = saved ? JSON.parse(saved) : [];
+      const updated = [data, ...list.filter((l: any) => l.short_code !== data.short_code)].slice(0, 20);
+      localStorage.setItem('shawty_recent_links', JSON.stringify(updated));
+    } catch {
+      // ignore localStorage errors
+    }
+  }
+
   return (
     <>
       {/* Decorative Background Blobs */}
@@ -25,12 +37,12 @@ export default function HomePage() {
           </a>
 
           <nav className="brand-nav">
-            <a href="#" className="active">
+            <a href="/" className="active">
               Shorten
             </a>
             <a href="#security">Security</a>
-            <a href="#analytics">
-              Analytics <span className="badge-soon">Soon</span>
+            <a href="/analytics">
+              Analytics
             </a>
             <a href="/api/docs" target="_blank" rel="noopener noreferrer">
               API
@@ -56,7 +68,7 @@ export default function HomePage() {
           {/* Form / Result Area */}
           <div className="form-card glass-card soft-glow">
             {!result ? (
-              <ShortenerForm onSuccess={setResult} />
+              <ShortenerForm onSuccess={handleSuccess} />
             ) : (
               <ResultCard result={result} onReset={() => setResult(null)} />
             )}
@@ -117,7 +129,7 @@ export default function HomePage() {
               </p>
             </div>
 
-            {/* Card 4: Phase 2 Coming Soon */}
+            {/* Card 4: Phase 2 LIVE */}
             <div className="bento-card bento-span-2 bento-phase2" id="analytics">
               <div
                 style={{
@@ -133,15 +145,37 @@ export default function HomePage() {
                     monitoring
                   </span>
                 </div>
-                <span className="badge-soon" style={{ padding: '0.35rem 0.85rem' }}>
-                  Phase 2: Coming Soon
+                <span
+                  className="badge-soon"
+                  style={{
+                    padding: '0.35rem 0.85rem',
+                    background: 'rgba(125, 148, 101, 0.2)',
+                    color: 'var(--success-green)',
+                  }}
+                >
+                  Phase 2: LIVE NOW ✨
                 </span>
               </div>
-              <h3 className="bento-card-title">User Dashboards &amp; Analytics</h3>
-              <p className="bento-card-text" style={{ maxWidth: '520px', marginBottom: '1.5rem' }}>
-                Track clicks, referrers, and geographic data with beautifully smoothed
-                charts. Manage all your shortened links in one cozy place.
+              <h3 className="bento-card-title">Real-Time Click Analytics &amp; Dashboards</h3>
+              <p className="bento-card-text" style={{ maxWidth: '520px', marginBottom: '1.25rem' }}>
+                Track clicks, device breakdowns, browser statistics, and referrers in
+                real-time with interactive 14-day charts.
               </p>
+              <a
+                href="/analytics"
+                className="btn-shorten"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  textDecoration: 'none',
+                  padding: '0.65rem 1.25rem',
+                  fontSize: '0.9rem',
+                  marginBottom: '1.5rem',
+                }}
+              >
+                <span>Explore Live Analytics →</span>
+              </a>
 
               {/* Decorative Chart Mockup */}
               <div

@@ -55,3 +55,47 @@ export type LinkStatus =
   | 'password_protected'
   | 'not_found'
   | 'inactive';
+
+// ─── Analytics Response ────────────────────────────────────────────────────────
+export interface BreakdownItem {
+  device?: string;
+  browser?: string;
+  referrer?: string;
+  count: number;
+  percentage: number;
+}
+
+export interface ClicksOverTimeItem {
+  date: string;
+  count: number;
+}
+
+export interface RecentClickItem {
+  id: string;
+  clicked_at: string;
+  device_type: string;
+  browser: string;
+  referrer: string;
+}
+
+export interface LinkStatsResponse {
+  link: {
+    short_code: string;
+    original_url: string;
+    click_count: number;
+    max_clicks: number | null;
+    expires_at: string | null;
+    is_active: boolean;
+    created_at: string;
+  };
+  metrics: {
+    total_clicks: number;
+    unique_visitors: number;
+  };
+  clicks_by_device: BreakdownItem[];
+  clicks_by_browser: BreakdownItem[];
+  clicks_by_referrer: BreakdownItem[];
+  clicks_over_time: ClicksOverTimeItem[];
+  recent_clicks: RecentClickItem[];
+}
+
