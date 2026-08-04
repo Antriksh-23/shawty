@@ -2,9 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
 import { signToken, setAuthCookie } from '@/lib/auth';
+import { checkRateLimit, getClientIp } from '@/lib/ratelimit';
 import type { ApiError } from '@/lib/types';
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const ip = getClientIp(req.headers);
+  const rateLimit = await checkRateLimit(ip);
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: 'Too many login attempts. Please try again later.' } satisfies ApiError,
+      { status: 429 }
+    );
+  }
+
   try {
     const body = (await req.json()) as { email?: string; password?: string };
     const email = body.email?.trim().toLowerCase();
